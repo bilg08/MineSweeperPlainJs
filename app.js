@@ -6,7 +6,17 @@ let canvas = document.getElementById("canvas");
 let cells = new Map();
 let revealedKeys = new Set();
 
-let map = generateMap(["1-1", "1-2", "3-3", "5-5"]);
+function generateBomb() {
+  let bomb = [];
+  for (let i = 0; i < 20; i++) {
+    let row = Math.floor(Math.random() * ROWS);
+    let col = Math.floor(Math.random() * COLS);
+    bomb.push([toString(row),toString(col)])
+  }
+}
+
+
+let map = generateMap(["0-1", "1-2", "3-3", "5-5"]);
 
 function getNeighBors(bombKey) {
   let [row, col] = fromKey(bombKey);
@@ -25,7 +35,16 @@ function getNeighBors(bombKey) {
     [row + 1, col],
     [row + 1, col + 1],
   ];
-  return neighbors.map(([r,c]) => toKey(r,c));
+  return neighbors.filter(isInBounds).map(([r,c]) => toKey(r,c));
+}
+
+
+function isInBounds(key) {
+  let [row, col] = key;
+  if (row < 0 || col < 0) return false;
+  else if (row > ROWS || col > COLS) return false;
+  return true
+
 }
 
 function generateMap(bombs) {
@@ -41,9 +60,6 @@ function generateMap(bombs) {
     }
 
   }
-
-
-
   for (let bombKey of bombs) {
     getNeighBors(bombKey);
     for (let neighborKey of getNeighBors(bombKey)) {
@@ -51,8 +67,6 @@ function generateMap(bombs) {
     }
     map.set(bombKey, "bomb");
   }
-  console.log(map, "map");
-
   return map;
 }
 
