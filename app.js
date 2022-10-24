@@ -7,23 +7,31 @@ let cells = new Map();
 let revealedKeys = new Set();
 
 function generateBomb() {
-  let bomb = [];
-  for (let i = 0; i < 20; i++) {
-    let row = Math.floor(Math.random() * ROWS);
-    let col = Math.floor(Math.random() * COLS);
-    bomb.push([toString(row),toString(col)])
+  let count = Math.round(Math.sqrt(ROWS * COLS));
+
+  let allKeys = [];
+
+  for (let i = 0; i < ROWS; i++) {
+    for (let j = 0; j < COLS; j++) {
+      allKeys.push(toKey(i, j));
+    }
   }
+  function compare() {
+    let coinFlip = Math.random() > 0.5;
+    return coinFlip ? 1 : -1;
+  }
+  allKeys.sort(compare);
+  return allKeys.splice(0, count);
 }
+generateBomb();
 
-
-let map = generateMap(["0-1", "1-2", "3-3", "5-5"]);
-
+let map = generateMap(generateBomb());
 function getNeighBors(bombKey) {
   let [row, col] = fromKey(bombKey);
   //------------------------------------------------------//
-  //  4-4(row-1 col-1)  4-5(row-1,col)  4-6 (row-1 col+1) //
-  //  5-4(row,col-1)    5-5(row,col)    5-6(row,col+1)    //
-  //  6-4 (row+1,col-1) 6-5(row++,col)  6-6(row++,col++)  //
+  //-->  4-4(row-1 col-1)  4-5(row-1,col)  4-6 (row-1 col+1) --//
+  //--> 5-4(row,col-1)    5-5(row,col)    5-6(row,col+1)     --//
+  //-->  6-4 (row+1,col-1) 6-5(row++,col)  6-6(row++,col++)  --//
   //------------------------------------------------------//
   let neighbors = [
     [row - 1, col - 1],
@@ -35,16 +43,14 @@ function getNeighBors(bombKey) {
     [row + 1, col],
     [row + 1, col + 1],
   ];
-  return neighbors.filter(isInBounds).map(([r,c]) => toKey(r,c));
+  return neighbors.filter(isInBounds).map(([r, c]) => toKey(r, c));
 }
-
 
 function isInBounds(key) {
   let [row, col] = key;
   if (row < 0 || col < 0) return false;
   else if (row > ROWS || col > COLS) return false;
-  return true
-
+  return true;
 }
 
 function generateMap(bombs) {
@@ -54,11 +60,10 @@ function generateMap(bombs) {
       map.set(neighborKey, 1);
     } else {
       let oldVal = map.get(neighborKey);
-      if (oldVal != 'bomb') {
-      map.set(neighborKey, oldVal + 1);        
+      if (oldVal != "bomb") {
+        map.set(neighborKey, oldVal + 1);
       }
     }
-
   }
   for (let bombKey of bombs) {
     getNeighBors(bombKey);
@@ -132,10 +137,23 @@ function uptadeCanvas() {
   }
 }
 function revealKeys(key) {
-  revealedKeys.add(key);
+  propagateReveal(key, new Set());
   uptadeCanvas();
 }
+function propagateReveal(key, visited) {
+  revealedKeys.add(key);
+  visited.add(key);
 
+  let isEmpty = !map.has(key);
+
+  if (isEmpty) {
+    for (let neighborKey of getNeighBors(key)) {
+      if (!visited.has(neighborKey)) {
+        propagateReveal(neighborKey,visited)
+      }
+    }
+  }
+}
 // function uptadeCanvas() {
 //   canvas.style.width = COLS * SIZE;
 //   canvas.style.height = ROWS * SIZE;
