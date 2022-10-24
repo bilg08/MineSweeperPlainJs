@@ -6,7 +6,7 @@ let canvas = document.getElementById("canvas");
 let cells = new Map();
 let revealedKeys = new Set();
 let flaggedKeys = new Set();
-
+let status = "playing";
 function generateBomb() {
   let count = Math.round(Math.sqrt(ROWS * COLS));
   let allKeys = [];
@@ -27,11 +27,11 @@ generateBomb();
 let map = generateMap(generateBomb());
 function getNeighBors(bombKey) {
   let [row, col] = fromKey(bombKey);
-  //------------------------------------------------------//
+  //-----------------------------------------------------------//
   //-->  4-4(row-1 col-1)  4-5(row-1,col)  4-6 (row-1 col+1) --//
   //--> 5-4(row,col-1)    5-5(row,col)    5-6(row,col+1)     --//
   //-->  6-4 (row+1,col-1) 6-5(row++,col)  6-6(row++,col++)  --//
-  //------------------------------------------------------//
+  //-----------------------------------------------------------//
   let neighbors = [
     [row - 1, col - 1],
     [row - 1, col],
@@ -74,6 +74,17 @@ function generateMap(bombs) {
   return map;
 }
 
+function revealCell(key) {
+  if (map.get(key) === "bomb") {
+    status = "lost";
+    setTimeout(() => {
+      alert('gameover')
+    },10)
+  } else {
+    propagateReveal(key, new Set());
+  }
+}
+
 function toKey(row, col) {
   return row + "-" + col;
 }
@@ -102,7 +113,7 @@ function createCanvas() {
       };
       cell.onclick = () => {
         if (!flaggedKeys.has(key)) {
-          propagateReveal(key, new Set());
+          revealCell(key);
           uptadeCanvas();
         }
       };
@@ -124,22 +135,25 @@ function uptadeCanvas() {
       let cell = cells.get(key);
       cell.style.disabled = false;
       cell.style.textContent = "";
+      let value = map.get(key);
 
-      if (revealedKeys.has(key)) {
+      if (status === "lost" && value === "bomb") {
         cell.disabled = true;
-        let value = map.get(key);
-        cell.innerText = value;
+        cell.textContent = "💣";
+        cell.style.background = "red";
+      } else if (revealedKeys.has(key)) {
+        cell.disabled = true;
         if (value === undefined) {
           cell.innerText = "";
         } else if (value === 1) {
+          cell.textContent = "1";
           cell.style.color = "blue";
         } else if (value === 2) {
+          cell.textContent = "1";
           cell.style.color = "green";
         } else if (value === 3) {
+          cell.textContent = "1";
           cell.style.color = "red";
-        } else if (value === "bomb") {
-          cell.textContent = "💣";
-          cell.style.background = "red";
         } else {
           throw Error("NONO");
         }
@@ -175,86 +189,3 @@ function toggleFlag(key) {
     flaggedKeys.add(key);
   }
 }
-// function uptadeCanvas() {
-//   canvas.style.width = COLS * SIZE;
-//   canvas.style.height = ROWS * SIZE;
-
-//   for (let i = 0; i < ROWS; i++) {
-//     for (let j = 0; j < COLS; j++) {
-//       let key = toKey(i, j);
-//       let cell = cells.get(key);
-//       if (revealedKeys.has(key)) {
-//         cell.disabled = true;
-//         let value = map.get(key);
-//         cell.textContent = value;
-//         if (value === undefined) {
-//           cell.textContent = "";
-//         } else if (value === 1) {
-//           cell.style.color = "blue";
-//         } else if (value === 2) {
-//           cell.style.color = "green";
-//         } else if (value === 3) {
-//           cell.style.color = "red";
-//         } else if (value === "bomb") {
-//           cell.textContent = "💣";
-//           cell.style.background = "red";
-//         }
-//       } else {
-//         cell.disabled = false;
-//         cell.textContent = "";
-//       }
-//     }
-//   }
-// }
-// function revealKeys(key) {
-//   revealedKeys.add(key);
-//   uptadeCanvas();
-// }
-
-// function getNeighbors(key) {
-//   let [row, col] = fromKey(key);
-//   let neighborRowCols = [
-//     [row - 1, col - 1],
-//     [row - 1, col],
-//     [row - 1, col + 1],
-//     [row, col - 1],
-//     [row, col + 1],
-//     [row + 1, col - 1],
-//     [row + 1, col],
-//     [row + 1, col + 1],
-//   ];
-//   return neighborRowCols.filter(isInBounds).map(([r,c]) => toKey(r,c))
-// }
-
-// function isInBounds([row, col]) {
-//   if (row < 0 || col < 0) {
-//   return false
-//   } else if (row > ROWS || col > COLS) {
-//     return false
-//   }
-//   return true
-// }
-
-// function generateMap(seedBombs) {
-//   let map = new Map();
-
-// function incrementDanger(neighborKey) {
-//   if (!map.has(neighborKey)) {
-//     map.set(neighborKey, 1);
-//   } else {
-//     let oldVal = map.get(neighborKey);
-//     if (oldVal !== "bomb") {
-//       map.set(neighborKey, oldVal + 1);
-//     }
-//   }
-// }
-
-//   for (let key of seedBombs) {
-//     map.set(key, "bomb");
-//     for (let neighborKey of getNeighbors(key)) {
-//       // console.log(neighborKey)
-//       incrementDanger(neighborKey)
-//     }
-//   }
-//   return map
-// }
