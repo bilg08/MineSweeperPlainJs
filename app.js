@@ -5,12 +5,11 @@ let canvas = document.getElementById("canvas");
 
 let cells = new Map();
 let revealedKeys = new Set();
+let flaggedKeys = new Set();
 
 function generateBomb() {
   let count = Math.round(Math.sqrt(ROWS * COLS));
-
   let allKeys = [];
-
   for (let i = 0; i < ROWS; i++) {
     for (let j = 0; j < COLS; j++) {
       allKeys.push(toKey(i, j));
@@ -96,12 +95,20 @@ function createCanvas() {
       cell.style.display = "flex";
       cell.style.justifyContent = "center";
       cell.style.alignItems = "center";
+      cell.oncontextmenu = (e) => {
+        e.preventDefault();
+        toggleFlag(key);
+        uptadeCanvas();
+      };
+      cell.onclick = () => {
+        if (!flaggedKeys.has(key)) {
+          propagateReveal(key, new Set());
+          uptadeCanvas();
+        }
+      };
       canvas.appendChild(cell);
       let key = toKey(i, j);
       cells.set(key, cell);
-      cell.onclick = () => {
-        revealKeys(key);
-      };
     }
   }
 }
@@ -115,14 +122,16 @@ function uptadeCanvas() {
     for (let j = 0; j < COLS; j++) {
       let key = toKey(i, j);
       let cell = cells.get(key);
+      cell.style.disabled = false;
+      cell.style.textContent = "";
+
       if (revealedKeys.has(key)) {
         cell.disabled = true;
         let value = map.get(key);
         cell.innerText = value;
         if (value === undefined) {
           cell.innerText = "";
-        }
-        if (value === 1) {
+        } else if (value === 1) {
           cell.style.color = "blue";
         } else if (value === 2) {
           cell.style.color = "green";
@@ -131,15 +140,20 @@ function uptadeCanvas() {
         } else if (value === "bomb") {
           cell.textContent = "💣";
           cell.style.background = "red";
+        } else {
+          throw Error("NONO");
         }
+      } else {
+        cell.textContent = "";
+        cell.style.color = "";
+      }
+      if (flaggedKeys.has(key)) {
+        cell.innerText = "🚩";
       }
     }
   }
 }
-function revealKeys(key) {
-  propagateReveal(key, new Set());
-  uptadeCanvas();
-}
+
 function propagateReveal(key, visited) {
   revealedKeys.add(key);
   visited.add(key);
@@ -149,9 +163,16 @@ function propagateReveal(key, visited) {
   if (isEmpty) {
     for (let neighborKey of getNeighBors(key)) {
       if (!visited.has(neighborKey)) {
-        propagateReveal(neighborKey,visited)
+        propagateReveal(neighborKey, visited);
       }
     }
+  }
+}
+function toggleFlag(key) {
+  if (flaggedKeys.has(key)) {
+    flaggedKeys.delete(key);
+  } else {
+    flaggedKeys.add(key);
   }
 }
 // function uptadeCanvas() {
